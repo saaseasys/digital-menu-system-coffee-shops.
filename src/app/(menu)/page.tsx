@@ -13,12 +13,12 @@ export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [settings, setSettings] = useState<ShopSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)  // <-- เปลี่ยนชื่อจาก error เป็น errorMsg
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null)
+      setErrorMsg(null)  // <-- ใช้ setErrorMsg แทน
 
       // Fetch categories
       const { data: cats, error: catError } = await supabase
@@ -27,7 +27,9 @@ export default function MenuPage() {
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       
-      if (catError) throw new Error(catError.message)
+      if (catError) {
+        throw new Error(catError.message)
+      }
 
       // Fetch products
       const { data: prods, error: prodError } = await supabase
@@ -167,3 +169,4 @@ export default function MenuPage() {
     </main>
   )
 }
+
