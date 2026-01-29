@@ -50,19 +50,22 @@ export default function SettingsPage() {
         .select('id')
         .single()
 
+      // Remove id from settings before update/insert
+      const { id, ...settingsData } = settings
+
       if (existing) {
-        // Update
+        // Update - ไม่ส่ง id ไปด้วย
         const { error } = await supabase
           .from('shop_settings')
-          .update(settings)
+          .update(settingsData)
           .eq('id', existing.id)
 
         if (error) throw error
       } else {
-        // Insert
+        // Insert - ไม่ต้องส่ง id
         const { error } = await supabase
           .from('shop_settings')
-          .insert([settings])
+          .insert([settingsData])
 
         if (error) throw error
       }
