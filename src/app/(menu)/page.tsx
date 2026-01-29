@@ -2,59 +2,58 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Product, Category, ShopSettings } from '@/types'
 import ProductCard from '@/components/menu/ProductCard'
 import CategoryTabs from '@/components/menu/CategoryTabs'
 import { Coffee, WifiOff } from 'lucide-react'
 
 export default function MenuPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
-  const [settings, setSettings] = useState<ShopSettings | null>(null)
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [errMsg, setErrMsg] = useState<string | null>(null)
+  const [showError, setShowError] = useState(null)
 
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      setErrMsg(null)
+      setShowError(null)
       
-      // Fetch categories
-      const catsRes = await supabase
+      // ดึงหมวดหมู่
+      const catRes = await supabase
         .from('categories')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       
-      if (catsRes.error) {
-        setErrMsg(catsRes.error.message)
+      if (catRes.error) {
+        setShowError('โหลดข้อมูลไม่สำเร็จ')
         setLoading(false)
         return
       }
       
-      // Fetch products
-      const prodsRes = await supabase
+      // ดึงสินค้า
+      const prodRes = await supabase
         .from('products')
         .select('*, category:categories(*)')
         .eq('is_available', true)
         .order('created_at', { ascending: false })
       
-      if (prodsRes.error) {
-        setErrMsg(prodsRes.error.message)
+      if (prodRes.error) {
+        setShowError('โหลดข้อมูลไม่สำเร็จ')
         setLoading(false)
         return
       }
       
-      // Fetch settings
-      const setsRes = await supabase
+      // ดึงตั้งค่าร้าน
+      const setRes = await supabase
         .from('shop_settings')
         .select('*')
         .single()
       
-      if (catsRes.data) setCategories(catsRes.data)
-      if (prodsRes.data) setProducts(prodsRes.data)
-      if (setsRes.data) setSettings(setsRes.data)
+      if (catRes.data) setCategories(catRes.data)
+      if (prodRes.data) setProducts(prodRes.data)
+      if (setRes.data) setSettings(setRes.data)
       
       setLoading(false)
     }
@@ -86,20 +85,16 @@ export default function MenuPage() {
               {settings?.shop_tagline || 'Digital Menu'}
             </p>
           </div>
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt="logo" className="w-12 h-12 rounded-full object-cover" />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-[#2C1810] flex items-center justify-center">
-              <Coffee className="w-6 h-6 text-[#D4A574]" />
-            </div>
-          )}
+          <div className="w-12 h-12 rounded-full bg-[#2C1810] flex items-center justify-center">
+            <Coffee className="w-6 h-6 text-[#D4A574]" />
+          </div>
         </div>
       </header>
 
-      {errMsg && (
+      {showError && (
         <div className="p-4 m-4 bg-red-900/20 border border-red-900/50 rounded-lg flex items-center gap-2 text-red-400">
           <WifiOff className="w-5 h-5" />
-          <p className="text-sm">{errMsg}</p>
+          <p className="text-sm">{showError}</p>
         </div>
       )}
 
