@@ -50,22 +50,22 @@ export default function SettingsPage() {
         .select('id')
         .single()
 
-      // Remove id from settings before update/insert
+      // ⚠️ สำคัญ: Remove id from settings before update/insert
       const { id, ...settingsData } = settings
 
       if (existing) {
-        // Update - ไม่ส่ง id ไปด้วย
+        // Update
         const { error } = await supabase
           .from('shop_settings')
-          .update(settingsData)
+          .update(settingsData)  // ✅ ใช้ settingsData แทน settings
           .eq('id', existing.id)
 
         if (error) throw error
       } else {
-        // Insert - ไม่ต้องส่ง id
+        // Insert
         const { error } = await supabase
           .from('shop_settings')
-          .insert([settingsData])
+          .insert([settingsData])  // ✅ ใช้ settingsData แทน settings
 
         if (error) throw error
       }
@@ -277,7 +277,7 @@ export default function SettingsPage() {
             )}
           </button>
 
-          <a
+          
             href="/"
             target="_blank"
             className="flex items-center justify-center gap-2 px-6 py-3 bg-[#252525] text-gray-300 rounded-lg hover:bg-[#2C2C2C] transition font-medium"
