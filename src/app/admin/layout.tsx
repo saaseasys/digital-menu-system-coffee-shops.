@@ -1,4 +1,5 @@
-import AdminHeader from '@/components/admin/AdminHeader'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default function AdminLayout({
   children,
@@ -6,11 +7,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-[#F5F5DC]">
-      <AdminHeader />
-      <main className="max-w-6xl mx-auto">
-        {children}
-      </main>
+    <div className="min-h-screen bg-[#0F0F0F]">
+      {children}
     </div>
   )
 }
