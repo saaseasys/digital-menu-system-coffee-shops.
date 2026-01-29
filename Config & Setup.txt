@@ -1,0 +1,9 @@
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# App
+NEXT_PUBLIC_APP_VERSION=1.0.0
+
+
+***.env.local (อย่าลืมใส่ใน .gitignore)
