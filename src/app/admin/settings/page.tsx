@@ -44,35 +44,31 @@ export default function SettingsPage() {
     try {
       setSaving(true)
 
-      // Check if settings exist
       const { data: existing } = await supabase
         .from('shop_settings')
         .select('id')
         .single()
 
-      // ⚠️ สำคัญ: Remove id from settings before update/insert
       const { id, ...settingsData } = settings
 
       if (existing) {
-        // Update
         const { error } = await supabase
           .from('shop_settings')
-          .update(settingsData)  // ✅ ใช้ settingsData แทน settings
+          .update(settingsData)
           .eq('id', existing.id)
 
         if (error) throw error
       } else {
-        // Insert
         const { error } = await supabase
           .from('shop_settings')
-          .insert([settingsData])  // ✅ ใช้ settingsData แทน settings
+          .insert([settingsData])
 
         if (error) throw error
       }
 
-      alert('บันทึกการตั้งค่าเรียบร้อยแล้ว!')
+      alert('Settings saved successfully!')
     } catch (error: any) {
-      alert('เกิดข้อผิดพลาด: ' + error.message)
+      alert('Error: ' + error.message)
     } finally {
       setSaving(false)
     }
@@ -89,19 +85,19 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#F5F5DC] mb-2">ตั้งค่าร้าน</h1>
-        <p className="text-gray-500">แก้ไขชื่อร้าน สี และตั้งค่าการแสดงผล</p>
+        <h1 className="text-3xl font-bold text-[#F5F5DC] mb-2">Shop Settings</h1>
+        <p className="text-gray-500">Edit shop name, colors and display settings</p>
       </div>
 
       <div className="space-y-6">
         {/* Shop Info */}
         <div className="bg-[#1A1A1A] rounded-xl border border-[#2C1810] p-6">
-          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">ข้อมูลร้าน</h2>
+          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">Shop Information</h2>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                ชื่อร้าน *
+                Shop Name *
               </label>
               <input
                 type="text"
@@ -127,7 +123,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                URL โลโก้
+                Logo URL
               </label>
               <input
                 type="url"
@@ -140,16 +136,16 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                สกุลเงิน
+                Currency
               </label>
               <select
                 value={settings.currency}
                 onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
                 className="w-full px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
               >
-                <option value="THB">THB - บาท</option>
-                <option value="USD">USD - ดอลลาร์</option>
-                <option value="EUR">EUR - ยูโร</option>
+                <option value="THB">THB</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
               </select>
             </div>
           </div>
@@ -157,12 +153,12 @@ export default function SettingsPage() {
 
         {/* Colors */}
         <div className="bg-[#1A1A1A] rounded-xl border border-[#2C1810] p-6">
-          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">สีธีม</h2>
+          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">Theme Colors</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีหลัก (Primary)
+                Primary Color
               </label>
               <div className="flex gap-2">
                 <input
@@ -182,7 +178,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีพื้นหลัง (Background)
+                Background Color
               </label>
               <div className="flex gap-2">
                 <input
@@ -202,7 +198,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีการ์ด (Card)
+                Card Color
               </label>
               <div className="flex gap-2">
                 <input
@@ -223,17 +219,17 @@ export default function SettingsPage() {
 
           {/* Preview */}
           <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: settings.bg_color }}>
-            <p className="text-sm text-gray-400 mb-3">ตัวอย่าง:</p>
+            <p className="text-sm text-gray-400 mb-3">Preview:</p>
             <div className="p-4 rounded-lg" style={{ backgroundColor: settings.card_color }}>
               <h3 className="font-bold mb-2" style={{ color: settings.primary_color }}>
                 {settings.shop_name}
               </h3>
-              <p className="text-sm text-gray-400">{settings.shop_tagline || 'Tagline ของคุณ'}</p>
+              <p className="text-sm text-gray-400">{settings.shop_tagline || 'Your tagline'}</p>
               <button
                 className="mt-3 px-4 py-2 rounded-lg font-medium"
                 style={{ backgroundColor: settings.primary_color, color: settings.bg_color }}
               >
-                ปุ่มตัวอย่าง
+                Sample Button
               </button>
             </div>
           </div>
@@ -241,7 +237,7 @@ export default function SettingsPage() {
 
         {/* Features */}
         <div className="bg-[#1A1A1A] rounded-xl border border-[#2C1810] p-6">
-          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">ฟีเจอร์</h2>
+          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">Features</h2>
 
           <label className="flex items-center gap-3 cursor-pointer">
             <input
@@ -251,8 +247,8 @@ export default function SettingsPage() {
               className="w-5 h-5 rounded border-[#2C1810] bg-[#0F0F0F] text-[#D4A574]"
             />
             <div>
-              <p className="text-sm font-medium text-[#F5F5DC]">เปิดใช้งาน QR Code สั่งอาหาร</p>
-              <p className="text-xs text-gray-500">ลูกค้าสามารถสแกน QR เพื่อสั่งอาหารได้ (Coming soon)</p>
+              <p className="text-sm font-medium text-[#F5F5DC]">Enable QR Code Ordering</p>
+              <p className="text-xs text-gray-500">Allow customers to scan QR to order (Coming soon)</p>
             </div>
           </label>
         </div>
@@ -267,12 +263,12 @@ export default function SettingsPage() {
             {saving ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                กำลังบันทึก...
+                Saving...
               </>
             ) : (
               <>
                 <Save className="w-5 h-5" />
-                บันทึกการตั้งค่า
+                Save Settings
               </>
             )}
           </button>
@@ -283,7 +279,7 @@ export default function SettingsPage() {
             className="flex items-center justify-center gap-2 px-6 py-3 bg-[#252525] text-gray-300 rounded-lg hover:bg-[#2C2C2C] transition font-medium"
           >
             <Eye className="w-5 h-5" />
-            ดูหน้าเมนู
+            View Menu
           </a>
         </div>
       </div>
