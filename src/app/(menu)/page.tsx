@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Product, Category, ShopSettings } from '@/types'
 import ProductCard from '@/components/menu/ProductCard'
@@ -13,72 +13,54 @@ export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [settings, setSettings] = useState<ShopSettings | null>(null)
   const [loading, setLoading] = useState(true)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errMsg, setErrMsg] = useState<string | null>(null)
 
-  const fetchData = useCallback(async () => {
-    try {
+  useEffect(() => {
+    async function loadData() {
       setLoading(true)
-      setErrorMsg(null)
-
+      setErrMsg(null)
+      
       // Fetch categories
-      const { data: cats, error: catError } = await supabase
+      const catsRes = await supabase
         .from('categories')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       
-      if (catError) {
-        throw new Error(catError.message)
+      if (catsRes.error) {
+        setErrMsg(catsRes.error.message)
+        setLoading(false)
+        return
       }
-
+      
       // Fetch products
-      const { data: prods, error: prodError } = await supabase
+      const prodsRes = await supabase
         .from('products')
-        .select(`*, category:categories(*)`)
+        .select('*, category:categories(*)')
         .eq('is_available', true)
         .order('created_at', { ascending: false })
       
-      if (prodError) throw new Error(prodError.message)
-
+      if (prodsRes.error) {
+        setErrMsg(prodsRes.error.message)
+        setLoading(false)
+        return
+      }
+      
       // Fetch settings
-      const { data: sets, error: setError } = await supabase
+      const setsRes = await supabase
         .from('shop_settings')
         .select('*')
         .single()
       
-      if (setError && setError.code !== 'PGRST116') {
-        console.warn('Settings error:', setError)
-      }
-
-      if (cats) setCategories(cats)
-      if (prods) setProducts(prods)
-      if (sets) setSettings(sets)
+      if (catsRes.data) setCategories(catsRes.data)
+      if (prodsRes.data) setProducts(prodsRes.data)
+      if (setsRes.data) setSettings(setsRes.data)
       
-    } catch (err: any) {
-      console.error('Error fetching data:', err)
-      setErrorMsg(err.message || 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง')
-    } finally {
       setLoading(false)
     }
+    
+    loadData()
   }, [])
-
-  useEffect(() => {
-    fetchData()
-
-    const channel = supabase
-      .channel('menu-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        fetchData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        fetchData()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [fetchData])
 
   const filteredProducts = selectedCategory 
     ? products.filter(p => p.category_id === selectedCategory)
@@ -114,10 +96,10 @@ export default function MenuPage() {
         </div>
       </header>
 
-      {errorMsg && (
+      {errMsg && (
         <div className="p-4 m-4 bg-red-900/20 border border-red-900/50 rounded-lg flex items-center gap-2 text-red-400">
           <WifiOff className="w-5 h-5" />
-          <p className="text-sm">{errorMsg}</p>
+          <p className="text-sm">{errMsg}</p>
         </div>
       )}
 
@@ -142,7 +124,6 @@ export default function MenuPage() {
           <div className="text-center py-12 text-gray-500">
             <Coffee className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>ไม่มีสินค้าในหมวดหมู่นี้</p>
-            {errorMsg && <p className="text-xs mt-2 text-red-400">{errorMsg}</p>}
           </div>
         )}
       </div>
