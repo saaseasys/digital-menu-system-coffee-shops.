@@ -27,9 +27,9 @@ export default function MenuPage() {
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       
-      if (catError) throw catError
+      if (catError) throw new Error(catError.message)
 
-      // Fetch products with categories
+      // Fetch products
       const { data: prods, error: prodError } = await supabase
         .from('products')
         .select(`
@@ -39,7 +39,7 @@ export default function MenuPage() {
         .eq('is_available', true)
         .order('created_at', { ascending: false })
       
-      if (prodError) throw prodError
+      if (prodError) throw new Error(prodError.message)
 
       // Fetch settings
       const { data: sets, error: setError } = await supabase
@@ -47,15 +47,18 @@ export default function MenuPage() {
         .select('*')
         .single()
       
-      if (setError && setError.code !== 'PGRST116') throw setError
+      // ไม่ throw error ถ้าไม่มี settings แต่ให้ใช้ค่า default
+      if (setError && setError.code !== 'PGRST116') {
+        console.warn('Settings error:', setError)
+      }
 
       if (cats) setCategories(cats)
       if (prods) setProducts(prods)
       if (sets) setSettings(sets)
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching data:', err)
-      setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง')
+      setError(err.message || 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง')
     } finally {
       setLoading(false)
     }
@@ -67,14 +70,12 @@ export default function MenuPage() {
     // Subscribe to realtime changes
     const channel = supabase
       .channel('menu-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'products' }, 
-        fetchData
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'categories' }, 
-        fetchData
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        fetchData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        fetchData()
+      })
       .subscribe()
 
     return () => {
@@ -154,6 +155,7 @@ export default function MenuPage() {
           <div className="text-center py-12 text-gray-500">
             <Coffee className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>ไม่มีสินค้าในหมวดหมู่นี้</p>
+            {error && <p className="text-xs mt-2 text-red-400">{error}</p>}
           </div>
         )}
       </div>
