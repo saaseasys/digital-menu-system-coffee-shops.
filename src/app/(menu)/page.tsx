@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { Product, Category, ShopSettings } from '@/types'
 import ProductCard from '@/components/menu/ProductCard'
 import CategoryTabs from '@/components/menu/CategoryTabs'
-import { Coffee, WifiOff } from 'lucide-react'
+import { Coffee, WifiOff, AlertTriangle } from 'lucide-react'
 
 export default function MenuPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -16,6 +16,13 @@ export default function MenuPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
+    // Check if Supabase is configured at runtime
+    if (!isSupabaseConfigured()) {
+      setErrorMsg('การตั้งค่า Supabase ไม่ถูกต้อง กรุณาติดต่อผู้ดูแลระบบ')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setErrorMsg(null)
@@ -64,6 +71,9 @@ export default function MenuPage() {
 
   useEffect(() => {
     fetchData()
+
+    // Only set up realtime if Supabase is configured
+    if (!isSupabaseConfigured()) return
 
     const channel = supabase
       .channel('menu-changes')
@@ -116,7 +126,11 @@ export default function MenuPage() {
 
       {errorMsg && (
         <div className="p-4 m-4 bg-red-900/20 border border-red-900/50 rounded-lg flex items-center gap-2 text-red-400">
-          <WifiOff className="w-5 h-5" />
+          {errorMsg.includes('Supabase') ? (
+            <AlertTriangle className="w-5 h-5" />
+          ) : (
+            <WifiOff className="w-5 h-5" />
+          )}
           <p className="text-sm">{errorMsg}</p>
         </div>
       )}
