@@ -1,102 +1,67 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Coffee } from 'lucide-react'
+
+// สร้าง supabase client ง่ายๆ ไม่ต้อง import จากไฟล์นอก
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function MenuPage() {
-  const [products, setProducts] = useState([])
-  const [categories, setCategories] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [settings, setSettings] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState([])
+  const [cats, setCats] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [shop, setShop] = useState({})
+  const [load, setLoad] = useState(true)
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true)
+    async function getData() {
+      setLoad(true)
       
-      // ดึงข้อมูลทั้งหมดพร้อมกัน
-      const [catRes, prodRes, setRes] = await Promise.all([
-        supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('products').select('*, category:categories(*)').eq('is_available', true).order('created_at', { ascending: false }),
-        supabase.from('shop_settings').select('*').single()
-      ])
+      const a = await supabase.from('categories').select('*')
+      const b = await supabase.from('products').select('*')
+      const c = await supabase.from('shop_settings').select('*').single()
       
-      if (catRes.data) setCategories(catRes.data)
-      if (prodRes.data) setProducts(prodRes.data)
-      if (setRes.data) setSettings(setRes.data)
+      if (a.data) setCats(a.data)
+      if (b.data) setItems(b.data)
+      if (c.data) setShop(c.data)
       
-      setLoading(false)
+      setLoad(false)
     }
-    
-    loadData()
+    getData()
   }, [])
 
-  const filteredProducts = selectedCategory 
-    ? products.filter(p => p.category_id === selectedCategory)
-    : products
+  const filtered = selected ? items.filter(i => i.category_id === selected) : items
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574]"></div>
-      </div>
-    )
-  }
+  if (load) return <div className="min-h-screen flex items-center justify-center bg-black text-white">กำลังโหลด...</div>
 
   return (
-    <main className="pb-24 max-w-md mx-auto md:max-w-3xl min-h-screen bg-[#0F0F0F] text-[#F5F5DC]">
-      <header className="sticky top-0 z-50 bg-[#0F0F0F]/95 backdrop-blur-md border-b border-[#2C1810] p-4">
-        <h1 className="text-2xl font-serif font-bold text-[#D4A574]">
-          {settings?.shop_name || 'Coffee Shop'}
-        </h1>
-        <p className="text-xs text-gray-500 mt-1">
-          {settings?.shop_tagline || 'Digital Menu'}
-        </p>
-      </header>
-
-      {/* Category Tabs - แบบง่าย */}
-      <div className="sticky top-[72px] z-40 bg-[#0F0F0F] border-b border-[#2C1810] overflow-x-auto">
-        <div className="flex space-x-2 p-4 min-w-max">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-full text-sm ${selectedCategory === null ? 'bg-[#D4A574] text-[#0F0F0F]' : 'bg-[#1A1A1A] text-gray-400'}`}
-          >
-            ทั้งหมด
+    <div className="min-h-screen bg-black text-white p-4">
+      <h1 className="text-2xl font-bold mb-4 text-yellow-500">{shop.shop_name || 'ร้านกาแฟ'}</h1>
+      
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <button onClick={() => setSelected(null)} className={`px-4 py-2 rounded ${selected===null?'bg-yellow-600':'bg-gray-800'}`}>ทั้งหมด</button>
+        {cats.map(c => (
+          <button key={c.id} onClick={() => setSelected(c.id)} className={`px-4 py-2 rounded whitespace-nowrap ${selected===c.id?'bg-yellow-600':'bg-gray-800'}`}>
+            {c.name_th}
           </button>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm ${selectedCategory === cat.id ? 'bg-[#D4A574] text-[#0F0F0F]' : 'bg-[#1A1A1A] text-gray-400'}`}
-            >
-              {cat.name_th}
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
 
-      {/* Product List - แบบง่าย */}
-      <div className="p-4 space-y-4">
-        {filteredProducts.map(product => (
-          <div key={product.id} className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2C1810]">
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold text-lg">{product.name_th}</h3>
-              <span className="text-[#D4A574] font-bold">฿{product.price}</span>
+      <div className="space-y-3">
+        {filtered.map(item => (
+          <div key={item.id} className="bg-gray-900 p-4 rounded-lg flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-lg">{item.name_th}</h3>
+              {item.description && <p className="text-gray-400 text-sm">{item.description}</p>}
             </div>
-            {product.description && (
-              <p className="text-sm text-gray-400 mt-2">{product.description}</p>
-            )}
+            <span className="text-yellow-400 font-bold text-xl">฿{item.price}</span>
           </div>
         ))}
-        
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <Coffee className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>ไม่มีสินค้า</p>
-          </div>
-        )}
       </div>
-    </main>
+    </div>
   )
 }
