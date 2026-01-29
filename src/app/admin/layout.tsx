@@ -20,22 +20,22 @@ export const revalidate = 0
 
 const menuItems = [
   { 
-    label: 'แดชบอร์ด', 
+    label: 'Dashboard', 
     href: '/admin/dashboard', 
     icon: LayoutDashboard 
   },
   { 
-    label: 'จัดการสินค้า', 
+    label: 'Products', 
     href: '/admin/products', 
     icon: Package 
   },
   { 
-    label: 'หมวดหมู่', 
+    label: 'Categories', 
     href: '/admin/categories', 
     icon: Layers 
   },
   { 
-    label: 'ตั้งค่าร้าน', 
+    label: 'Settings', 
     href: '/admin/settings', 
     icon: Settings 
   },
@@ -48,6 +48,7 @@ export default function AdminLayout({
 }) {
   const [user, setUser] = useState<any>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -61,18 +62,37 @@ export default function AdminLayout({
   }, [])
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/admin/login')
+        return
+      }
+      setUser(session.user)
+    } catch (error) {
+      console.error('Auth error:', error)
       router.push('/admin/login')
-      return
+    } finally {
+      setLoading(false)
     }
-    setUser(session.user)
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
-    router.refresh()
+    try {
+      await supabase.auth.signOut()
+      router.push('/admin/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574]"></div>
+      </div>
+    )
   }
 
   return (
@@ -119,7 +139,7 @@ export default function AdminLayout({
         <div className="p-4 border-t border-[#2C1810]">
           {user && (
             <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-              <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
+              <p className="text-xs text-gray-500">Logged in as</p>
               <p className="text-sm text-[#D4A574] font-medium truncate">
                 {user.email}
               </p>
@@ -131,7 +151,7 @@ export default function AdminLayout({
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            <span>ออกจากระบบ</span>
+            <span>Logout</span>
           </button>
 
           <Link
@@ -140,7 +160,7 @@ export default function AdminLayout({
             className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-[#D4A574] transition-colors border border-[#2C1810]"
           >
             <Coffee className="w-4 h-4" />
-            ดูหน้าเมนู
+            View Menu
           </Link>
         </div>
       </aside>
@@ -193,7 +213,7 @@ export default function AdminLayout({
             <div className="p-4 border-t border-[#2C1810]">
               {user && (
                 <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-                  <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
+                  <p className="text-xs text-gray-500">Logged in as</p>
                   <p className="text-sm text-[#D4A574] font-medium truncate">
                     {user.email}
                   </p>
@@ -205,7 +225,7 @@ export default function AdminLayout({
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
               >
                 <LogOut className="w-5 h-5" />
-                <span>ออกจากระบบ</span>
+                <span>Logout</span>
               </button>
             </div>
           </aside>
