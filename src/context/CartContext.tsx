@@ -2,15 +2,15 @@
 
 import { createContext, useContext, useState, useEffect } from 'react'
 
-// กำหนด Type ภายในไฟล์นี้เลย (ไม่ต้อง import จากภายนอก กันกระทบ)
+// แก้ Type นี้ให้รองรับ null ทั้งหมด
 interface CartItem {
   product: {
     id: number
     name_th: string
-    name_en?: string
+    name_en?: string | null  // ← แก้ตรงนี้ ให้เป็น string | null | undefined
     price: number
-    image_url?: string
-    description?: string
+    image_url?: string | null  // ← แก้ตรงนี้ด้วย
+    description?: string | null  // ← และตรงนี้
   }
   quantity: number
   notes?: string
@@ -138,3 +138,4 @@ export const useCart = () => {
   }
   return context
 }
+
