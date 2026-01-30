@@ -6,26 +6,29 @@ import { ShopSettings } from '@/types'
 import { Save, Loader2, Eye, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+// Default settings สำรองไว้เสมอ
+const DEFAULT_SETTINGS: ShopSettings = {
+  shop_name: 'My Coffee Shop',
+  shop_tagline: '',
+  logo_url: '',
+  primary_color: '#D4A574',
+  bg_color: '#0F0F0F',
+  card_color: '#1A1A1A',
+  currency: 'THB',
+  enable_qr_order: false
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [settings, setSettings] = useState<ShopSettings>({
-    shop_name: 'My Coffee Shop',
-    shop_tagline: '',
-    logo_url: '',
-    primary_color: '#D4A574',
-    bg_color: '#0F0F0F',
-    card_color: '#1A1A1A',
-    currency: 'THB',
-    enable_qr_order: false
-  })
+  const [settings, setSettings] = useState<ShopSettings>(DEFAULT_SETTINGS)
+  const [dbId, setDbId] = useState<number | null>(null) // เก็บ id แยกต่างหาก
 
   useEffect(() => {
-    // Check if Supabase is configured first
     if (!isSupabaseConfigured()) {
-      setError('กรุณาตั้งค่า Supabase (NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY) ใน Environment Variables')
+      setError('กรุณาตั้งค่า Supabase URL และ Anon Key ใน Environment Variables')
       setLoading(false)
       return
     }
@@ -40,18 +43,26 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .from('shop_settings')
         .select('*')
-        .single()
+        .maybeSingle() // ใช้ maybeSingle แทน single จะได้ไม่ error ถ้าไม่มีข้อมูล
 
-      if (error && error.code !== 'PGRST116') {
-        throw error
-      }
+      if (error) throw error
       
       if (data) {
-        setSettings(data)
+        setDbId(data.id)
+        setSettings({
+          shop_name: data.shop_name || DEFAULT_SETTINGS.shop_name,
+          shop_tagline: data.shop_tagline || '',
+          logo_url: data.logo_url || '',
+          primary_color: data.primary_color || DEFAULT_SETTINGS.primary_color,
+          bg_color: data.bg_color || DEFAULT_SETTINGS.bg_color,
+          card_color: data.card_color || DEFAULT_SETTINGS.card_color,
+          currency: data.currency || 'THB',
+          enable_qr_order: data.enable_qr_order || false
+        })
       }
     } catch (err: any) {
-      console.error('Error fetching settings:', err)
-      setError('ไม่สามารถโหลดข้อมูลได้: ' + err.message)
+      console.error('Fetch error:', err)
+      setError('โหลดข้อมูลไม่สำเร็จ: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -67,65 +78,66 @@ export default function SettingsPage() {
       setSaving(true)
       setError(null)
 
-      // Check if settings exist
-      const { data: existing, error: checkError } = await supabase
-        .from('shop_settings')
-        .select('id')
-        .single()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError
+      // สร้าง object ใหม่โดยตรง ไม่ใช้ destructuring (ป้องกัน error)
+      const settingsData = {
+        shop_name: settings.shop_name,
+        shop_tagline: settings.shop_tagline,
+        logo_url: settings.logo_url,
+        primary_color: settings.primary_color,
+        bg_color: settings.bg_color,
+        card_color: settings.card_color,
+        currency: settings.currency,
+        enable_qr_order: settings.enable_qr_order,
+        updated_at: new Date().toISOString()
       }
 
-      // Remove id from settings before update/insert
-      const { id, ...settingsData } = settings
-
-      if (existing) {
+      if (dbId) {
+        // Update
         const { error } = await supabase
           .from('shop_settings')
           .update(settingsData)
-          .eq('id', existing.id)
-
+          .eq('id', dbId)
         if (error) throw error
       } else {
-        const { error } = await supabase
+        // Insert
+        const { data, error } = await supabase
           .from('shop_settings')
-          .insert([settingsData])
-
+          .insert([{ ...settingsData, created_at: new Date().toISOString() }])
+          .select()
         if (error) throw error
+        if (data && data[0]) setDbId(data[0].id)
       }
 
-      alert('บันทึกการตั้งค่าเรียบร้อยแล้ว!')
-    } catch (error: any) {
-      console.error('Save error:', error)
-      setError('เกิดข้อผิดพลาด: ' + error.message)
+      alert('บันทึกสำเร็จ!')
+    } catch (err: any) {
+      console.error('Save error:', err)
+      setError('บันทึกไม่สำเร็จ: ' + err.message)
     } finally {
       setSaving(false)
     }
+  }
+
+  // ถ้า env ไม่ถูกต้อง แสดง error ชัดเจน
+  if (!isSupabaseConfigured() && !loading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-400 mb-2">Environment Variables ไม่ครบ</h2>
+          <p className="text-gray-400 mb-4">กรุณาเพิ่มใน Vercel:</p>
+          <div className="text-left inline-block bg-black/30 p-4 rounded text-sm font-mono text-gray-300">
+            <div>NEXT_PUBLIC_SUPABASE_URL=https://...</div>
+            <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...</div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
         <Loader2 className="w-8 h-8 text-[#D4A574] animate-spin" />
-      </div>
-    )
-  }
-
-  // Show error state if Supabase not configured
-  if (error && !isSupabaseConfigured()) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-red-400 mb-2">การตั้งค่าไม่สมบูรณ์</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <p className="text-sm text-gray-500">
-            กรุณาเพิ่ม Environment Variables ใน Vercel:<br/>
-            <code className="bg-black/30 px-2 py-1 rounded mt-2 inline-block">NEXT_PUBLIC_SUPABASE_URL</code><br/>
-            <code className="bg-black/30 px-2 py-1 rounded mt-1 inline-block">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
-          </p>
-        </div>
       </div>
     )
   }
@@ -144,7 +156,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ... rest of your JSX code ไม่ต้องแก้ ... */}
       <div className="space-y-6">
         {/* Shop Info */}
         <div className="bg-[#1A1A1A] rounded-xl border border-[#2C1810] p-6">
@@ -152,124 +163,34 @@ export default function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                ชื่อร้าน *
-              </label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">ชื่อร้าน *</label>
               <input
                 type="text"
                 value={settings.shop_name}
-                onChange={(e) => setSettings({ ...settings, shop_name: e.target.value })}
+                onChange={(e) => setSettings(s => ({ ...s, shop_name: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-                placeholder="SLOWBAR Coffee"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Tagline
-              </label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Tagline</label>
               <input
                 type="text"
                 value={settings.shop_tagline || ''}
-                onChange={(e) => setSettings({ ...settings, shop_tagline: e.target.value })}
+                onChange={(e) => setSettings(s => ({ ...s, shop_tagline: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-                placeholder="Crafted with passion, served with love"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                URL โลโก้
-              </label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">URL โลโก้</label>
               <input
                 type="url"
                 value={settings.logo_url || ''}
-                onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
+                onChange={(e) => setSettings(s => ({ ...s, logo_url: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
                 placeholder="https://..."
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                สกุลเงิน
-              </label>
-              <select
-                value={settings.currency}
-                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                className="w-full px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-              >
-                <option value="THB">THB - บาท</option>
-                <option value="USD">USD - ดอลลาร์</option>
-                <option value="EUR">EUR - ยูโร</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Colors */}
-        <div className="bg-[#1A1A1A] rounded-xl border border-[#2C1810] p-6">
-          <h2 className="text-lg font-bold text-[#F5F5DC] mb-4">สีธีม</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีหลัก (Primary)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={settings.primary_color}
-                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                  className="w-16 h-11 rounded-lg cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={settings.primary_color}
-                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                  className="flex-1 px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีพื้นหลัง (Background)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={settings.bg_color}
-                  onChange={(e) => setSettings({ ...settings, bg_color: e.target.value })}
-                  className="w-16 h-11 rounded-lg cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={settings.bg_color}
-                  onChange={(e) => setSettings({ ...settings, bg_color: e.target.value })}
-                  className="flex-1 px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                สีการ์ด (Card)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={settings.card_color}
-                  onChange={(e) => setSettings({ ...settings, card_color: e.target.value })}
-                  className="w-16 h-11 rounded-lg cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={settings.card_color}
-                  onChange={(e) => setSettings({ ...settings, card_color: e.target.value })}
-                  className="flex-1 px-4 py-2.5 bg-[#0F0F0F] border border-[#2C1810] rounded-lg text-[#F5F5DC] focus:border-[#D4A574] focus:outline-none"
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -281,24 +202,11 @@ export default function SettingsPage() {
             disabled={saving}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#D4A574] text-[#0F0F0F] font-bold rounded-lg hover:bg-[#C49464] transition disabled:opacity-50"
           >
-            {saving ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                กำลังบันทึก...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                บันทึกการตั้งค่า
-              </>
-            )}
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+            {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
           </button>
 
-          <a
-            href="/"
-            target="_blank"
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#252525] text-gray-300 rounded-lg hover:bg-[#2C2C2C] transition font-medium"
-          >
+          <a href="/" target="_blank" className="flex items-center justify-center gap-2 px-6 py-3 bg-[#252525] text-gray-300 rounded-lg hover:bg-[#2C2C2C] transition">
             <Eye className="w-5 h-5" />
             ดูหน้าเมนู
           </a>
