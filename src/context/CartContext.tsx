@@ -1,90 +1,140 @@
-'use client';
+'use client'
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { CartItem } from '@/types/order';
+import { createContext, useContext, useState, useEffect } from 'react'
 
-interface CartContextType {
-  items: CartItem[];
-  tableId: string | null;
-  addItem: (item: CartItem) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  clearCart: () => void;
-  setTableId: (id: string) => void;
-  total: number;
+// กำหนด Type ภายในไฟล์นี้เลย (ไม่ต้อง import จากภายนอก กันกระทบ)
+interface CartItem {
+  product: {
+    id: number
+    name_th: string
+    name_en?: string
+    price: number
+    image_url?: string
+    description?: string
+  }
+  quantity: number
+  notes?: string
+  customizations?: any[]
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+interface CartContextType {
+  items: CartItem[]
+  tableId: string | null
+  addItem: (item: CartItem) => void
+  removeItem: (productId: number) => void
+  updateQuantity: (productId: number, quantity: number) => void
+  clearCart: () => void
+  setTableId: (id: string) => void
+  total: number
+  itemCount: number
+  mounted: boolean // เพิ่ม flag สำหรับจัดการ hydration
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [tableId, setTableIdState] = useState<string | null>(null);
+  const [items, setItems] = useState<CartItem[]>([])
+  const [tableId, setTableIdState] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount (client-side only)
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    const savedTable = localStorage.getItem('tableId');
-    if (savedCart) setItems(JSON.parse(savedCart));
-    if (savedTable) setTableIdState(savedTable);
-  }, []);
+    setMounted(true)
+    try {
+      const savedCart = localStorage.getItem('brewmenu_cart')
+      const savedTable = localStorage.getItem('brewmenu_tableId')
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart)
+        setItems(Array.isArray(parsed) ? parsed : [])
+      }
+      if (savedTable) setTableIdState(savedTable)
+    } catch (e) {
+      console.error('Error loading cart:', e)
+    }
+  }, [])
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    if (mounted) {
+      try {
+        localStorage.setItem('brewmenu_cart', JSON.stringify(items))
+      } catch (e) {
+        console.error('Error saving cart:', e)
+      }
+    }
+  }, [items, mounted])
 
   const setTableId = (id: string) => {
-    setTableIdState(id);
-    localStorage.setItem('tableId', id);
-  };
+    setTableIdState(id)
+    try {
+      localStorage.setItem('brewmenu_tableId', id)
+    } catch (e) {
+      console.error('Error saving tableId:', e)
+    }
+  }
 
   const addItem = (item: CartItem) => {
     setItems(prev => {
-      const existing = prev.find(i => i.product.id === item.product.id);
+      const existing = prev.find(i => i.product.id === item.product.id)
       if (existing) {
         return prev.map(i => 
           i.product.id === item.product.id 
-            ? { ...i, quantity: i.quantity + 1 }
+            ? { ...i, quantity: i.quantity + (item.quantity || 1) }
             : i
-        );
+        )
       }
-      return [...prev, item];
-    });
-  };
+      return [...prev, { ...item, quantity: item.quantity || 1 }]
+    })
+  }
 
   const removeItem = (productId: number) => {
-    setItems(prev => prev.filter(i => i.product.id !== productId));
-  };
+    setItems(prev => prev.filter(i => i.product.id !== productId))
+  }
 
   const updateQuantity = (productId: number, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
-      return;
+      removeItem(productId)
+      return
     }
     setItems(prev => prev.map(i => 
       i.product.id === productId ? { ...i, quantity } : i
-    ));
-  };
+    ))
+  }
 
   const clearCart = () => {
-    setItems([]);
-    localStorage.removeItem('cart');
-  };
+    setItems([])
+    try {
+      localStorage.removeItem('brewmenu_cart')
+    } catch (e) {
+      console.error('Error clearing cart:', e)
+    }
+  }
 
-  const total = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const total = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
     <CartContext.Provider value={{
-      items, tableId, addItem, removeItem, 
-      updateQuantity, clearCart, setTableId, total
+      items, 
+      tableId, 
+      addItem, 
+      removeItem, 
+      updateQuantity, 
+      clearCart, 
+      setTableId, 
+      total,
+      itemCount,
+      mounted
     }}>
       {children}
     </CartContext.Provider>
-  );
+  )
 }
 
 export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) throw new Error('useCart must be used within CartProvider');
-  return context;
-};
+  const context = useContext(CartContext)
+  if (!context) {
+    throw new Error('useCart must be used within CartProvider')
+  }
+  return context
+}
