@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import Link from 'next/link'
 import { 
   Coffee, 
@@ -12,33 +12,15 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 const menuItems = [
-  { 
-    label: 'Dashboard', 
-    href: '/admin/dashboard', 
-    icon: LayoutDashboard 
-  },
-  { 
-    label: 'Products', 
-    href: '/admin/products', 
-    icon: Package 
-  },
-  { 
-    label: 'Categories', 
-    href: '/admin/categories', 
-    icon: Layers 
-  },
-  { 
-    label: 'Settings', 
-    href: '/admin/settings', 
-    icon: Settings 
-  },
+  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Products', href: '/admin/products', icon: Package },
+  { label: 'Categories', href: '/admin/categories', icon: Layers },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
 export default function AdminLayout({
@@ -49,29 +31,55 @@ export default function AdminLayout({
   const [user, setUser] = useState<any>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  // Skip layout for login page
+  // ป้องกัน Hydration Mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Skip layout check for login page
   if (pathname === '/admin/login') {
     return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
   }
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    if (mounted) {
+      checkAuth()
+    }
+  }, [mounted])
 
   const checkAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      setLoading(true)
+      setError(null)
+
+      // เช็คก่อนว่า Supabase พร้อมใช้งานไหม
+      if (!isSupabaseConfigured()) {
+        console.error('Supabase not configured')
+        setError('Supabase ไม่ได้ตั้งค่า')
+        setLoading(false)
+        return
+      }
+
+      const { data: { session }, error: authError } = await supabase.auth.getSession()
+      
+      if (authError) {
+        throw authError
+      }
+
       if (!session) {
         router.push('/admin/login')
         return
       }
+      
       setUser(session.user)
-    } catch (error) {
-      console.error('Auth error:', error)
-      router.push('/admin/login')
+    } catch (err: any) {
+      console.error('Auth check error:', err)
+      setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -87,6 +95,15 @@ export default function AdminLayout({
     }
   }
 
+  // รอให้ Client Side พร้อมก่อน render (ป้องกัน hydration error)
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574]"></div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
@@ -95,11 +112,29 @@ export default function AdminLayout({
     )
   }
 
+  // ถ้า error จริงๆ ให้แสดงหน้า error แทน
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
+        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 max-w-md text-center">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-400 mb-2">การตั้งค่าผิดพลาด</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <button 
+            onClick={() => router.push('/admin/login')}
+            className="px-4 py-2 bg-[#D4A574] text-[#0F0F0F] rounded-lg font-bold"
+          >
+            ไปหน้า Login
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#1A1A1A] border-r border-[#2C1810]">
-        {/* Logo */}
         <div className="p-6 border-b border-[#2C1810]">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#D4A574] rounded-lg flex items-center justify-center">
@@ -112,7 +147,6 @@ export default function AdminLayout({
           </Link>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon
@@ -135,7 +169,6 @@ export default function AdminLayout({
           })}
         </nav>
 
-        {/* User Info & Logout */}
         <div className="p-4 border-t border-[#2C1810]">
           {user && (
             <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
@@ -234,7 +267,6 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Top Header - Mobile */}
         <header className="lg:hidden bg-[#1A1A1A] border-b border-[#2C1810] p-4 flex justify-between items-center sticky top-0 z-40">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -257,7 +289,6 @@ export default function AdminLayout({
           </Link>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
