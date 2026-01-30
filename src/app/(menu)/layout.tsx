@@ -7,4 +7,19 @@ export default function MenuLayout({
   children: React.ReactNode
 }) {
   return <>{children}</>
+
+}
+
+import { CartProvider } from '@/context/CartContext'
+
+export default function MenuLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <CartProvider>
+      {children}
+    </CartProvider>
+  )
 }
