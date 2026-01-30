@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { Product, Category, ShopSettings } from '@/types'
 import { useCart } from '@/context/CartContext'
 import CategoryTabs from '@/components/menu/CategoryTabs'
-import { Coffee, AlertTriangle, WifiOff } from 'lucide-react'
+import { Coffee, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 // Component แสดงสินค้าแบบมีปุ่มเพิ่มในตะกร้า
@@ -71,7 +71,7 @@ function ProductCardWithCart({ product, currency, primaryColor }: {
 
         <button
           onClick={() => addItem({ product, quantity: 1 })}
-          className="w-full py-2 rounded-xl font-medium transition-all active:scale-95"
+          className="w-full py-2 rounded-xl font-medium transition-all active:scale-95 hover:opacity-90"
           style={{ 
             backgroundColor: primaryColor,
             color: '#0a0a0a'
@@ -124,6 +124,7 @@ export default function TableMenuPage() {
       
     } catch (err: any) {
       setErrorMsg(err.message || 'ไม่สามารถโหลดข้อมูลได้')
+      console.error('Error:', err)
     } finally {
       setLoading(false)
     }
@@ -160,7 +161,7 @@ export default function TableMenuPage() {
           </div>
           <Link 
             href="/cart"
-            className="relative w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#2C1810] flex items-center justify-center"
+            className="relative w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#2C1810] flex items-center justify-center hover:border-[#D4A574] transition"
           >
             <Coffee className="w-5 h-5 text-[#D4A574]" />
           </Link>
@@ -208,28 +209,27 @@ export default function TableMenuPage() {
         )}
       </section>
 
-      {/* Cart Summary Bar */}
+      {/* Cart Summary Bar - ต้องมี Link ครอบ */}
       <CartBar tableId={tableId} />
     </main>
   )
 }
 
-// Component แถบสรุปตะกร้าด้านล่าง
+// Component แถบสรุปตะกร้าด้านล่าง - ต้องกดได้
 function CartBar({ tableId }: { tableId: string }) {
-  const { items, total } = useCart()
-  const count = items.reduce((sum, item) => sum + item.quantity, 0)
+  const { items, total, itemCount } = useCart()
 
-  if (count === 0) return null
+  if (itemCount === 0) return null
 
   return (
     <Link href="/cart">
-      <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-[#D4A574] text-[#0a0a0a] rounded-2xl p-4 flex items-center justify-between shadow-2xl z-50">
+      <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto bg-[#D4A574] text-[#0a0a0a] rounded-2xl p-4 flex items-center justify-between shadow-2xl cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition z-50">
         <div>
-          <p className="text-sm font-medium">{count} รายการ</p>
+          <p className="font-bold text-lg">{itemCount} รายการ</p>
           <p className="text-xs opacity-80">แตะเพื่อดูตะกร้า</p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-bold">฿{total}</p>
+          <p className="text-2xl font-bold">฿{total}</p>
         </div>
       </div>
     </Link>
