@@ -1,5 +1,8 @@
 'use client'
 
+import { motion } from 'framer-motion'
+import { useRef, useEffect, useState } from 'react'
+
 interface Category {
   id: number
   name_th: string
@@ -18,44 +21,81 @@ export default function CategoryTabs({
   onSelect, 
   primaryColor = '#D4A574' 
 }: CategoryTabsProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }
+
+  useEffect(() => {
+    checkScroll()
+    window.addEventListener('resize', checkScroll)
+    return () => window.removeEventListener('resize', checkScroll)
+  }, [categories])
+
+  const handleScroll = () => checkScroll()
+
   return (
-    <nav className="sticky top-[72px] z-40 bg-[#0F0F0F] border-b border-[#2C1810] overflow-x-auto scrollbar-hide shadow-lg">
-      <div className="flex space-x-2 p-4 min-w-max">
-        <button
+    <div className="sticky top-[60px] z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[#2C1810]/50">
+      {/* Gradient Overlays for scroll indication */}
+      <div className={`absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none transition-opacity duration-300 ${canScrollLeft ? 'opacity-100' : 'opacity-0'}`} />
+      <div className={`absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none transition-opacity duration-300 ${canScrollRight ? 'opacity-100' : 'opacity-0'}`} />
+
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex space-x-3 p-4 overflow-x-auto scrollbar-hide scroll-smooth"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <motion.button
           onClick={() => onSelect(null)}
-          className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-            selected === null 
-              ? 'shadow-lg transform scale-105' 
-              : 'hover:bg-[#252525]'
-          }`}
+          whileTap={{ scale: 0.95 }}
+          className="relative px-6 py-3 rounded-2xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex-shrink-0"
           style={{
-            backgroundColor: selected === null ? primaryColor : '#1A1A1A',
-            color: selected === null ? '#0F0F0F' : '#9CA3AF',
+            backgroundColor: selected === null ? primaryColor : '#141414',
+            color: selected === null ? '#0a0a0a' : '#9CA3AF',
             border: selected === null ? 'none' : '1px solid #2C1810'
           }}
         >
           ทั้งหมด
-        </button>
+          {selected === null && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute inset-0 rounded-2xl border-2 border-[#D4A574]/50"
+              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+            />
+          )}
+        </motion.button>
         
-        {categories.map(cat => (
-          <button
+        {categories.map((cat) => (
+          <motion.button
             key={cat.id}
             onClick={() => onSelect(cat.id)}
-            className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-              selected === cat.id 
-                ? 'shadow-lg transform scale-105' 
-                : 'hover:bg-[#252525]'
-            }`}
+            whileTap={{ scale: 0.95 }}
+            className="relative px-6 py-3 rounded-2xl text-sm font-medium whitespace-nowrap transition-all duration-300 flex-shrink-0"
             style={{
-              backgroundColor: selected === cat.id ? primaryColor : '#1A1A1A',
-              color: selected === cat.id ? '#0F0F0F' : '#9CA3AF',
+              backgroundColor: selected === cat.id ? primaryColor : '#141414',
+              color: selected === cat.id ? '#0a0a0a' : '#9CA3AF',
               border: selected === cat.id ? 'none' : '1px solid #2C1810'
             }}
           >
             {cat.name_th}
-          </button>
+            {selected === cat.id && (
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute inset-0 rounded-2xl border-2 border-[#D4A574]/50"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+          </motion.button>
         ))}
       </div>
-    </nav>
+    </div>
   )
 }
