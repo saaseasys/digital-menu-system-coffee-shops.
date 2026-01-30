@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   AlertTriangle,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from 'lucide-react'
 
 const menuItems = [
@@ -71,6 +72,13 @@ export default function AdminLayout({
 
     checkAuth()
   }, [pathname, router])
+
+  // ฟังก์ชัน Logout กลาง (ใช้ซ้ำได้)
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/admin/login')
+    router.refresh()
+  }
 
   // ✅ ย้าย conditional return มาหลัง hooks
   if (isLoginPage) {
@@ -141,7 +149,7 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#2C1810]">
+        <div className="p-4 border-t border-[#2C1810] space-y-2">
           {user && (
             <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
               <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
@@ -151,11 +159,18 @@ export default function AdminLayout({
             </div>
           )}
           
+          {/* ปุ่มกลับ */}
           <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.push('/admin/login')
-            }}
+            onClick={() => router.back()}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#252525] hover:text-[#D4A574] transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>กลับ</span>
+          </button>
+
+          {/* ปุ่มออกจากระบบ */}
+          <button
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -218,7 +233,7 @@ export default function AdminLayout({
               })}
             </nav>
 
-            <div className="p-4 border-t border-[#2C1810]">
+            <div className="p-4 border-t border-[#2C1810] space-y-2">
               {user && (
                 <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
                   <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
@@ -229,10 +244,15 @@ export default function AdminLayout({
               )}
               
               <button
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                  router.push('/admin/login')
-                }}
+                onClick={() => router.back()}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#252525] transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>กลับ</span>
+              </button>
+              
+              <button
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
               >
                 <LogOut className="w-5 h-5" />
@@ -245,17 +265,40 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
+        {/* Top Header - Mobile (มีปุ่มกลับและออกจากระบบแล้ว) */}
         <header className="lg:hidden bg-[#1A1A1A] border-b border-[#2C1810] p-4 flex justify-between items-center sticky top-0 z-40">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-[#252525] rounded-lg">
-            <Menu className="w-6 h-6 text-[#D4A574]" />
-          </button>
+          {/* ซ้าย: ปุ่มกลับ + ปุ่มเมนู */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-gray-400"
+              title="กลับ"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
+              title="เมนู"
+            >
+              <Menu className="w-6 h-6 text-[#D4A574]" />
+            </button>
+          </div>
+          
+          {/* กลาง: ชื่อ */}
           <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <Coffee className="w-6 h-6 text-[#D4A574]" />
             <h1 className="text-lg font-bold text-[#D4A574]">Admin</h1>
           </Link>
-          <Link href="/" target="_blank" className="p-2 hover:bg-[#252525] rounded-lg">
-            <Coffee className="w-5 h-5 text-gray-400" />
-          </Link>
+
+          {/* ขวา: ออกจากระบบ (สีแดง ชัดเจน) */}
+          <button
+            onClick={handleLogout}
+            className="p-2 hover:bg-red-900/20 rounded-lg transition-colors text-red-400"
+            title="ออกจากระบบ"
+          >
+            <LogOut className="w-6 h-6" />
+          </button>
         </header>
 
         <main className="flex-1 overflow-auto">
