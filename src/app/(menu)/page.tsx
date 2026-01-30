@@ -203,9 +203,10 @@ export default function MenuPage() {
 
       {/* Footer */}
       <footer className="mt-16 text-center pb-8 relative z-10">
-        <p className="text-xs text-gray-700">Powered by BrewMenu Pro</p>
+        <p className="text-xs text-gray-700">Powered by SaaSEasys</p>
       </footer>
     </main>
   )
 }
+
 
