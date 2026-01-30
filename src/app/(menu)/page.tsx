@@ -113,7 +113,7 @@ export default function MenuPage() {
         {/* Background Image - รูปกาแฟเข้มๆ */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1920&q=80" 
+            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1920&q=80" // <-- เปลี่ยนเป็น path รูปของคุณที่ชอบเลย
             alt="Coffee Background" 
             className="w-full h-full object-cover opacity-40"
           />
@@ -208,3 +208,4 @@ export default function MenuPage() {
     </main>
   )
 }
+
