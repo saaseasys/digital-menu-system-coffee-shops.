@@ -3,16 +3,14 @@
 import { useState } from 'react'
 import { Product } from '@/types'
 import { Clock, Star, Plus } from 'lucide-react'
-import { motion } from 'framer-motion'
 
 interface ProductCardProps {
   product: Product
   currency: string
   primaryColor: string
-  index?: number
 }
 
-export default function ProductCard({ product, currency, primaryColor, index = 0 }: ProductCardProps) {
+export default function ProductCard({ product, currency, primaryColor }: ProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -21,18 +19,15 @@ export default function ProductCard({ product, currency, primaryColor, index = 0
   }
 
   return (
-    <motion.div 
-      className="group relative"
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      whileHover={{ y: -4 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    <div 
+      className="group relative transition-all duration-300 hover:-translate-y-1"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative bg-[#141414] rounded-3xl overflow-hidden border border-[#2C1810] hover:border-[#D4A574]/30 transition-colors duration-300 shadow-lg hover:shadow-2xl hover:shadow-[#D4A574]/5">
         
         {/* Image Container */}
         <div className="relative aspect-[4/5] overflow-hidden bg-[#1A1A1A]">
-          {/* Skeleton Loading */}
           {!imageLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] animate-pulse" />
           )}
@@ -56,18 +51,13 @@ export default function ProductCard({ product, currency, primaryColor, index = 0
             </div>
           )}
 
-          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-80" />
 
           {/* Featured Badge */}
           {product.is_featured && (
-            <motion.div 
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md bg-[#D4A574]/90 shadow-lg"
-            >
+            <div className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md bg-[#D4A574]/90 shadow-lg animate-bounce-subtle">
               <Star className="w-4 h-4 text-[#0a0a0a] fill-current" />
-            </motion.div>
+            </div>
           )}
 
           {/* Unavailable Overlay */}
@@ -79,16 +69,14 @@ export default function ProductCard({ product, currency, primaryColor, index = 0
             </div>
           )}
 
-          {/* Quick Add Button (Visible on Hover) */}
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
-            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#D4A574] flex items-center justify-center shadow-lg hover:bg-[#E5B685] transition-colors"
-          >
+          {/* Quick Add Button */}
+          <button className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#D4A574] flex items-center justify-center shadow-lg hover:bg-[#E5B685] transition-all duration-300 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+          }`}>
             <Plus className="w-5 h-5 text-[#0a0a0a]" />
-          </motion.button>
+          </button>
 
-          {/* Price Tag - Floating */}
+          {/* Price Tag */}
           <div className="absolute top-3 left-3 px-3 py-1.5 bg-[#0a0a0a]/80 backdrop-blur-md rounded-full border border-[#2C1810]">
             <span className="text-[#D4A574] font-bold text-sm">
               {currency} {formatPrice(product.price)}
@@ -137,6 +125,6 @@ export default function ProductCard({ product, currency, primaryColor, index = 0
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
