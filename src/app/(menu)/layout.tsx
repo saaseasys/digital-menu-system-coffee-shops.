@@ -1,22 +1,11 @@
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { CartProvider } from '@/context/CartContext'
+import { ReactNode } from 'react'
 
-export default function MenuLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <>{children}</>
-
+interface MenuLayoutProps {
+  children: ReactNode
 }
 
-import { CartProvider } from '@/context/CartContext'
-
-export default function MenuLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MenuLayout({ children }: MenuLayoutProps) {
   return (
     <CartProvider>
       {children}
