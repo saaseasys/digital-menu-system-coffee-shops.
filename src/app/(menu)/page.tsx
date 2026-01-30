@@ -108,31 +108,42 @@ export default function MenuPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-8 px-4 overflow-hidden animate-fade-in">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] opacity-50" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4A574]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      {/* Hero Section with Coffee Background */}
+      <section className="relative pt-20 pb-8 px-4 overflow-hidden min-h-[300px] flex items-center">
+        {/* Background Image - รูปกาแฟเข้มๆ */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1920&q=80" 
+            alt="Coffee Background" 
+            className="w-full h-full object-cover opacity-40"
+          />
+          {/* Dark Overlay เพื่อให้อ่านตัวหนังสือได้ */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-[#0a0a0a]/60 to-[#0a0a0a]" />
+        </div>
         
-        <div className="relative max-w-md mx-auto md:max-w-3xl">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4A574]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        
+        <div className="relative z-10 max-w-md mx-auto md:max-w-3xl w-full">
           <div className="mb-6">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#F5F5DC] leading-tight">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#F5F5DC] leading-tight drop-shadow-lg">
               สัมผัสรสชาติ<br />
               <span className="text-[#D4A574]">กาแฟคุณภาพ</span>
             </h2>
-            <p className="text-gray-500 mt-3 text-sm max-w-[250px]">
+            <p className="text-gray-300 mt-4 text-sm md:text-base max-w-[300px] drop-shadow-md leading-relaxed">
               คัดสรรเมล็ดกาแฟพิเศษ คั่วสดใหม่ทุกวัน เพื่อความหอมกรุ่นที่สมบูรณ์แบบ
             </p>
           </div>
 
           {/* Stats Pills */}
           <div className="flex gap-3 animate-slide-up">
-            <div className="bg-[#1A1A1A]/80 backdrop-blur-sm border border-[#2C1810] rounded-2xl px-4 py-2">
-              <p className="text-[#D4A574] font-bold text-lg">{products.length}+</p>
-              <p className="text-[10px] text-gray-500">เมนูเครื่องดื่ม</p>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-md border border-[#D4A574]/30 rounded-2xl px-4 py-3">
+              <p className="text-[#D4A574] font-bold text-xl">{products.length}+</p>
+              <p className="text-[10px] text-gray-400">เมนูเครื่องดื่ม</p>
             </div>
-            <div className="bg-[#1A1A1A]/80 backdrop-blur-sm border border-[#2C1810] rounded-2xl px-4 py-2">
-              <p className="text-[#D4A574] font-bold text-lg">5-10</p>
-              <p className="text-[10px] text-gray-500">นาที</p>
+            <div className="bg-[#0a0a0a]/60 backdrop-blur-md border border-[#D4A574]/30 rounded-2xl px-4 py-3">
+              <p className="text-[#D4A574] font-bold text-xl">5-10</p>
+              <p className="text-[10px] text-gray-400">นาที</p>
             </div>
           </div>
         </div>
@@ -191,7 +202,7 @@ export default function MenuPage() {
       </button>
 
       {/* Footer */}
-      <footer className="mt-16 text-center pb-8">
+      <footer className="mt-16 text-center pb-8 relative z-10">
         <p className="text-xs text-gray-700">Powered by BrewMenu Pro</p>
       </footer>
     </main>
