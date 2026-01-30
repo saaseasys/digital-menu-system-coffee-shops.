@@ -1,13 +1,43 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Order } from '@/types/order';
+import { Order, Table } from '@/types/order'; // หรือจาก database.types
+
+// กำหนด Type สำหรับข้อมูลที่มีการ Join (รวม table)
+type OrderWithTable = Order & {
+  table: Table | null;
+};
 
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithTable[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ดึงข้อมูลครั้งแรก
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            table:tables(*)
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching orders:', error);
+          return;
+        }
+
+        // Cast ข้อมูลให้ตรงกับ Type (Supabase ส่ง null ได้ แต่ Type อาจจะไม่รองรับ)
+        if (data) {
+          setOrders(data as unknown as OrderWithTable[]);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchOrders();
 
     // Subscribe realtime
@@ -15,9 +45,8 @@ export function useOrders() {
       .channel('orders-channel')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          console.log('Order change:', payload);
-          fetchOrders(); // หรือจะ update state แบบ optimistic ก็ได้
+        () => {
+          fetchOrders();
         }
       )
       .subscribe();
@@ -27,15 +56,5 @@ export function useOrders() {
     };
   }, []);
 
-  const fetchOrders = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`*, table:tables(*)`)
-      .order('created_at', { ascending: false });
-    
-    if (data) setOrders(data);
-    setLoading(false);
-  };
-
-  return { orders, loading, refetch: fetchOrders };
+  return { orders, loading, refetch: () => {} };
 }
