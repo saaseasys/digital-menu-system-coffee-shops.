@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 
 const menuItems = [
@@ -32,93 +33,64 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const [isLoginPage, setIsLoginPage] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  // ป้องกัน Hydration Mismatch
+  // ✅ Hooks ต้องถูกเรียกก่อนเสมอ ไม่มี early return ก่อน hooks
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Skip layout check for login page
-  if (pathname === '/admin/login') {
-    return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
-  }
-
-  useEffect(() => {
-    if (mounted) {
-      checkAuth()
-    }
-  }, [mounted])
-
-  const checkAuth = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // เช็คก่อนว่า Supabase พร้อมใช้งานไหม
-      if (!isSupabaseConfigured()) {
-        console.error('Supabase not configured')
-        setError('Supabase ไม่ได้ตั้งค่า')
-        setLoading(false)
-        return
-      }
-
-      const { data: { session }, error: authError } = await supabase.auth.getSession()
-      
-      if (authError) {
-        throw authError
-      }
-
-      if (!session) {
-        router.push('/admin/login')
-        return
-      }
-      
-      setUser(session.user)
-    } catch (err: any) {
-      console.error('Auth check error:', err)
-      setError('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: ' + err.message)
-    } finally {
+    if (pathname === '/admin/login') {
+      setIsLoginPage(true)
       setLoading(false)
+      return
     }
-  }
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-      router.push('/admin/login')
-      router.refresh()
-    } catch (error) {
-      console.error('Logout error:', error)
+    const checkAuth = async () => {
+      try {
+        if (!isSupabaseConfigured()) {
+          setError('Supabase ไม่ได้ตั้งค่า')
+          setLoading(false)
+          return
+        }
+
+        const { data: { session }, error: authError } = await supabase.auth.getSession()
+        if (authError) throw authError
+
+        if (!session) {
+          router.push('/admin/login')
+          return
+        }
+        
+        setUser(session.user)
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  // รอให้ Client Side พร้อมก่อน render (ป้องกัน hydration error)
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574]"></div>
-      </div>
-    )
+    checkAuth()
+  }, [pathname, router])
+
+  // ✅ ย้าย conditional return มาหลัง hooks
+  if (isLoginPage) {
+    return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A574]"></div>
+        <Loader2 className="w-8 h-8 text-[#D4A574] animate-spin" />
       </div>
     )
   }
 
-  // ถ้า error จริงๆ ให้แสดงหน้า error แทน
   if (error) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
-        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 max-w-md text-center">
+        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 text-center max-w-md">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-red-400 mb-2">การตั้งค่าผิดพลาด</h2>
+          <h2 className="text-xl font-bold text-red-400 mb-2">เกิดข้อผิดพลาด</h2>
           <p className="text-gray-400 mb-4">{error}</p>
           <button 
             onClick={() => router.push('/admin/login')}
@@ -172,7 +144,7 @@ export default function AdminLayout({
         <div className="p-4 border-t border-[#2C1810]">
           {user && (
             <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-              <p className="text-xs text-gray-500">Logged in as</p>
+              <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
               <p className="text-sm text-[#D4A574] font-medium truncate">
                 {user.email}
               </p>
@@ -180,11 +152,14 @@ export default function AdminLayout({
           )}
           
           <button
-            onClick={handleLogout}
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.push('/admin/login')
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            <span>Logout</span>
+            <span>ออกจากระบบ</span>
           </button>
 
           <Link
@@ -193,7 +168,7 @@ export default function AdminLayout({
             className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-[#D4A574] transition-colors border border-[#2C1810]"
           >
             <Coffee className="w-4 h-4" />
-            View Menu
+            ดูหน้าเมนู
           </Link>
         </div>
       </aside>
@@ -246,7 +221,7 @@ export default function AdminLayout({
             <div className="p-4 border-t border-[#2C1810]">
               {user && (
                 <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-                  <p className="text-xs text-gray-500">Logged in as</p>
+                  <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
                   <p className="text-sm text-[#D4A574] font-medium truncate">
                     {user.email}
                   </p>
@@ -254,11 +229,14 @@ export default function AdminLayout({
               )}
               
               <button
-                onClick={handleLogout}
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  router.push('/admin/login')
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
               >
                 <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <span>ออกจากระบบ</span>
               </button>
             </div>
           </aside>
@@ -268,23 +246,14 @@ export default function AdminLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="lg:hidden bg-[#1A1A1A] border-b border-[#2C1810] p-4 flex justify-between items-center sticky top-0 z-40">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
-          >
+          <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-[#252525] rounded-lg">
             <Menu className="w-6 h-6 text-[#D4A574]" />
           </button>
-          
           <Link href="/admin/dashboard" className="flex items-center gap-2">
             <Coffee className="w-6 h-6 text-[#D4A574]" />
             <h1 className="text-lg font-bold text-[#D4A574]">Admin</h1>
           </Link>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
-          >
+          <Link href="/" target="_blank" className="p-2 hover:bg-[#252525] rounded-lg">
             <Coffee className="w-5 h-5 text-gray-400" />
           </Link>
         </header>
