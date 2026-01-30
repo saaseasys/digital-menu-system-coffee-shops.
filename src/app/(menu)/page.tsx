@@ -6,7 +6,6 @@ import { Product, Category, ShopSettings } from '@/types'
 import ProductCard from '@/components/menu/ProductCard'
 import CategoryTabs from '@/components/menu/CategoryTabs'
 import { Coffee, WifiOff, AlertTriangle, ShoppingBag } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MenuPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -56,7 +55,6 @@ export default function MenuPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchData)
       .subscribe()
 
-    // Scroll listener for header effect
     const handleScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll, { passive: true })
 
@@ -70,27 +68,10 @@ export default function MenuPage() {
     ? products.filter(p => p.category_id === selectedCategory)
     : products
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08 }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-2 border-[#D4A574] border-t-transparent rounded-full"
-        />
+        <div className="w-12 h-12 border-2 border-[#D4A574] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -98,9 +79,7 @@ export default function MenuPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] pb-32 overflow-x-hidden">
       {/* Sticky Header */}
-      <motion.header 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
+      <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-lg shadow-2xl' : 'bg-transparent'
         }`}
@@ -127,19 +106,15 @@ export default function MenuPage() {
             )}
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-8 px-4 overflow-hidden">
+      <section className="relative pt-24 pb-8 px-4 overflow-hidden animate-fade-in">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] opacity-50" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4A574]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         
         <div className="relative max-w-md mx-auto md:max-w-3xl">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
+          <div className="mb-6">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#F5F5DC] leading-tight">
               สัมผัสรสชาติ<br />
               <span className="text-[#D4A574]">กาแฟคุณภาพ</span>
@@ -147,15 +122,10 @@ export default function MenuPage() {
             <p className="text-gray-500 mt-3 text-sm max-w-[250px]">
               คัดสรรเมล็ดกาแฟพิเศษ คั่วสดใหม่ทุกวัน เพื่อความหอมกรุ่นที่สมบูรณ์แบบ
             </p>
-          </motion.div>
+          </div>
 
           {/* Stats Pills */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex gap-3"
-          >
+          <div className="flex gap-3 animate-slide-up">
             <div className="bg-[#1A1A1A]/80 backdrop-blur-sm border border-[#2C1810] rounded-2xl px-4 py-2">
               <p className="text-[#D4A574] font-bold text-lg">{products.length}+</p>
               <p className="text-[10px] text-gray-500">เมนูเครื่องดื่ม</p>
@@ -164,7 +134,7 @@ export default function MenuPage() {
               <p className="text-[#D4A574] font-bold text-lg">5-10</p>
               <p className="text-[10px] text-gray-500">นาที</p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -177,67 +147,48 @@ export default function MenuPage() {
       />
 
       {/* Error Message */}
-      <AnimatePresence>
-        {errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-4 mx-4 mt-4 bg-red-900/10 border border-red-900/30 rounded-xl flex items-center gap-3 p-4 text-red-400"
-          >
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm">{errorMsg}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {errorMsg && (
+        <div className="px-4 mx-4 mt-4 bg-red-900/10 border border-red-900/30 rounded-xl flex items-center gap-3 p-4 text-red-400 animate-shake">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm">{errorMsg}</p>
+        </div>
+      )}
 
       {/* Products Grid */}
       <section className="px-4 mt-6 max-w-md mx-auto md:max-w-3xl">
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 gap-4 md:grid-cols-3"
-        >
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {filteredProducts.map((product, index) => (
-            <motion.div key={product.id} variants={itemVariants}>
+            <div 
+              key={product.id} 
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
               <ProductCard 
                 product={product} 
                 currency={settings?.currency || 'THB'}
                 primaryColor={settings?.primary_color || '#D4A574'}
-                index={index}
               />
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {filteredProducts.length === 0 && !errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 text-gray-500 col-span-2"
-          >
+          <div className="text-center py-16 text-gray-500 col-span-2">
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#1A1A1A] flex items-center justify-center">
               <Coffee className="w-8 h-8 opacity-30" />
             </div>
             <p className="text-sm">ไม่มีสินค้าในหมวดหมู่นี้</p>
-          </motion.div>
+          </div>
         )}
       </section>
 
       {/* Floating Cart Button */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#D4A574] to-[#B8935F] rounded-full shadow-2xl shadow-[#D4A574]/20 flex items-center justify-center z-40 group"
-      >
+      <button className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#D4A574] to-[#B8935F] rounded-full shadow-2xl shadow-[#D4A574]/20 flex items-center justify-center z-40 group hover:scale-105 active:scale-95 transition-transform">
         <ShoppingBag className="w-6 h-6 text-[#0a0a0a] group-hover:rotate-12 transition-transform" />
         <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-[#0a0a0a]">
           0
         </span>
-      </motion.button>
+      </button>
 
       {/* Footer */}
       <footer className="mt-16 text-center pb-8">
