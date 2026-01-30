@@ -46,7 +46,7 @@ export default function CategoryTabs({
       <div className={`absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none transition-opacity duration-300 ${canScrollLeft ? 'opacity-100' : 'opacity-0'}`} />
       <div className={`absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none transition-opacity duration-300 ${canScrollRight ? 'opacity-100' : 'opacity-0'}`} />
 
-      {/* CONTAINER นี้ต้องตรงกับหน้า page.tsx - เพิ่ม max-w-md mx-auto md:max-w-3xl */}
+      {/* Container - ปรับให้ยืดหยุ่น ใช้ได้ทั้งหน้าเดิมและหน้าใหม่ */}
       <div className="max-w-md mx-auto md:max-w-3xl">
         <div 
           ref={scrollRef}
