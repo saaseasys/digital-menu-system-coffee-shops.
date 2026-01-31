@@ -1,322 +1,125 @@
-'use client'
+'use client';
 
-// บังคับให้ไม่ทำ Static Generation และไม่ Cache
-export const dynamic = 'force-dynamic'
-
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import Link from 'next/link'
-import { 
-  Coffee, 
-  LayoutDashboard, 
-  Package, 
-  Layers, 
-  Settings, 
-  LogOut,
-  Menu,
-  X,
-  AlertTriangle,
-  Loader2,
-  ArrowLeft,
-  Table,
-  ClipboardList
-} from 'lucide-react'
-
-const menuItems = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Products', href: '/admin/products', icon: Package },
-  { label: 'Categories', href: '/admin/categories', icon: Layers },
-  { label: 'Tables', href: '/admin/tables', icon: Table },
-  { label: 'Orders', href: '/admin/orders', icon: ClipboardList },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
-]
-
-console.log('BUILD VERSION:', new Date().toISOString()) 
-console.log('✅ Admin Layout Loaded v2.1 at:', new Date().toISOString())
-console.log('✅ Admin Layout Loaded - Menu Items:', menuItems)
-console.log('✅ File Version: v2.1 - With Tables & Orders')
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const [user, setUser] = useState<any>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoginPage, setIsLoginPage] = useState(false)
-  const router = useRouter()
-  const pathname = usePathname()
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+// เปลี่ยนเป็น any ก่อนเพื่อทดสอบ
+export default function TablesManagementPage() {
+  const [tables, setTables] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTableNumber, setNewTableNumber] = useState('');
+  const [newSeatCount, setNewSeatCount] = useState(4);
 
   useEffect(() => {
-    console.log('🔍 AdminLayout Mounted - Pathname:', pathname)
-    console.log('📋 Menu Items Count:', menuItems.length)
+    fetchTables();
+  }, []);
+
+  const fetchTables = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('tables')
+      .select('*')
+      .order('table_number');
     
-    if (pathname === '/admin/login') {
-      setIsLoginPage(true)
-      setLoading(false)
-      return
+    setTables(data || []);
+    setLoading(false);
+  };
+
+  const generateQR = (tableId: number) => {
+    const baseUrl = window.location.origin;
+    const qrUrl = `${baseUrl}/table/${tableId}`;
+    window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`, '_blank');
+  };
+
+  const addTable = async () => {
+    if (!newTableNumber) return;
+    
+    const { error } = await supabase
+      .from('tables')
+      .insert({
+        table_number: newTableNumber,
+        seat_count: newSeatCount,
+        status: 'available'
+      });
+
+    if (!error) {
+      setNewTableNumber('');
+      fetchTables();
+    } else {
+      alert('ไม่สามารถเพิ่มโต๊ะได้: ' + error.message);
     }
+  };
 
-    const checkAuth = async () => {
-      try {
-        if (!isSupabaseConfigured()) {
-          setError('Supabase ไม่ได้ตั้งค่า')
-          setLoading(false)
-          return
-        }
+  const updateStatus = async (id: number, status: string) => {
+    await supabase.from('tables').update({ status }).eq('id', id);
+    fetchTables();
+  };
 
-        const { data: { session }, error: authError } = await supabase.auth.getSession()
-        if (authError) throw authError
-
-        if (!session) {
-          router.push('/admin/login')
-          return
-        }
-        
-        setUser(session.user)
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkAuth()
-  }, [pathname, router])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
-    router.refresh()
-  }
-
-  if (isLoginPage) {
-    console.log('🔑 Login Page Detected - Rendering without layout')
-    return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#D4A574] animate-spin" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
-        <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-red-400 mb-2">เกิดข้อผิดพลาด</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <button 
-            onClick={() => router.push('/admin/login')}
-            className="px-4 py-2 bg-[#D4A574] text-[#0F0F0F] rounded-lg font-bold"
-          >
-            ไปหน้า Login
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  console.log('🎯 Rendering Layout with', menuItems.length, 'menu items:', menuItems.map(i => i.label).join(', '))
+  if (loading) return <div className="p-8 text-center">กำลังโหลด...</div>;
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] flex">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-[#1A1A1A] border-r border-[#2C1810]">
-        <div className="p-6 border-b border-[#2C1810]">
-          <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4A574] rounded-lg flex items-center justify-center">
-              <Coffee className="w-6 h-6 text-[#0F0F0F]" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-[#D4A574]">Admin Panel</h1>
-              <p className="text-xs text-gray-500">BrewMenu Pro</p>
-            </div>
-          </Link>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-[#D4A574] text-[#0F0F0F] font-semibold'
-                    : 'text-gray-400 hover:bg-[#252525] hover:text-[#D4A574]'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-[#2C1810] space-y-2">
-          {user && (
-            <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-              <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
-              <p className="text-sm text-[#D4A574] font-medium truncate">
-                {user.email}
-              </p>
-            </div>
-          )}
-          
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-[#D4A574]">จัดการโต๊ะ</h1>
+      
+      <div className="bg-[#1A1A1A] p-4 rounded-xl mb-6 border border-[#2C1810]">
+        <h3 className="text-white mb-4">เพิ่มโต๊ะใหม่</h3>
+        <div className="flex gap-4 flex-wrap">
+          <input
+            type="text"
+            placeholder="หมายเลขโต๊ะ (เช่น 1, A1)"
+            value={newTableNumber}
+            onChange={(e) => setNewTableNumber(e.target.value)}
+            className="px-4 py-2 bg-[#0a0a0a] border border-[#2C1810] rounded-lg text-white"
+          />
+          <select
+            value={newSeatCount}
+            onChange={(e) => setNewSeatCount(Number(e.target.value))}
+            className="px-4 py-2 bg-[#0a0a0a] border border-[#2C1810] rounded-lg text-white"
+          >
+            {[2, 4, 6, 8].map(n => (
+              <option key={n} value={n}>{n} ที่นั่ง</option>
+            ))}
+          </select>
           <button
-            onClick={() => router.back()}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#252525] hover:text-[#D4A574] transition-colors"
+            onClick={addTable}
+            className="px-6 py-2 bg-[#D4A574] text-black rounded-lg hover:bg-[#E5B685]"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>กลับ</span>
+            เพิ่มโต๊ะ
           </button>
-
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>ออกจากระบบ</span>
-          </button>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-[#D4A574] transition-colors border border-[#2C1810]"
-          >
-            <Coffee className="w-4 h-4" />
-            ดูหน้าเมนู
-          </Link>
         </div>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setSidebarOpen(false)}>
-          <aside 
-            className="w-64 h-full bg-[#1A1A1A] border-r border-[#2C1810] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-[#2C1810] flex justify-between items-center">
-              <Link href="/admin/dashboard" className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#D4A574] rounded-lg flex items-center justify-center">
-                  <Coffee className="w-6 h-6 text-[#0F0F0F]" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-[#D4A574]">Admin Panel</h1>
-                  <p className="text-xs text-gray-500">BrewMenu Pro</p>
-                </div>
-              </Link>
-              <button onClick={() => setSidebarOpen(false)}>
-                <X className="w-6 h-6 text-gray-400" />
-              </button>
-            </div>
-
-            <nav className="flex-1 p-4 space-y-1">
-              {menuItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-[#D4A574] text-[#0F0F0F] font-semibold'
-                        : 'text-gray-400 hover:bg-[#252525] hover:text-[#D4A574]'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <div className="p-4 border-t border-[#2C1810] space-y-2">
-              {user && (
-                <div className="mb-3 px-4 py-2 bg-[#252525] rounded-lg">
-                  <p className="text-xs text-gray-500">เข้าสู่ระบบด้วย</p>
-                  <p className="text-sm text-[#D4A574] font-medium truncate">
-                    {user.email}
-                  </p>
-                </div>
-              )}
-              
-              <button
-                onClick={() => router.back()}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#252525] transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>กลับ</span>
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>ออกจากระบบ</span>
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="lg:hidden bg-[#1A1A1A] border-b border-[#2C1810] p-4 flex justify-between items-center sticky top-0 z-40">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-gray-400"
-              title="กลับ"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-[#252525] rounded-lg transition-colors"
-              title="เมนู"
-            >
-              <Menu className="w-6 h-6 text-[#D4A574]" />
-            </button>
-          </div>
-          
-          <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-[#D4A574]">Admin</h1>
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="p-2 hover:bg-red-900/20 rounded-lg transition-colors text-red-400"
-            title="ออกจากระบบ"
-          >
-            <LogOut className="w-6 h-6" />
-          </button>
-        </header>
-
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
       </div>
-    </div>
-  )
-}
 
-
-
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {tables.map((table) => (
+          <div key={table.id} className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2C1810]">
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-xl font-bold text-[#D4A574]">โต๊ะ {table.table_number}</h3>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                table.status === 'available' ? 'bg-green-900 text-green-400' :
+                table.status === 'occupied' ? 'bg-red-900 text-red-400' :
+                'bg-yellow-900 text-yellow-400'
+              }`}>
+                {table.status === 'available' ? 'ว่าง' : 
+                 table.status === 'occupied' ? 'มีลูกค้า' : 
+                 table.status === 'cleaning' ? 'กำลังทำความสะอาด' : 'จอง'}
+              </span>
+            </div>
+            
+            <p className="text-gray-400 text-sm mb-4">{table.seat_count} ที่นั่ง</p>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => generateQR(table.id)}
+                className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              >
+                ดู QR Code
+              </button>
+              
+              <select
+                value={table.status}
+                onChange={(e) => updateStatus(table.id, e.target.value)}
+                className="w-full px-2 py-2 bg-[#0a0a0a] border border-[#2C1810] rounded-lg text-white text-sm"
+              >
+                <option value="available">ว่าง</option>
+                <option value="occupied">มีลูกค้า</option>
+                <option value="cleaning">ทำความสะอาด</option>
+                <option value="
