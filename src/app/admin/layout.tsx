@@ -1,5 +1,8 @@
 'use client'
 
+// บังคับให้ไม่ทำ Static Generation และไม่ Cache
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -312,4 +315,5 @@ export default function AdminLayout({
     </div>
   )
 }
+
 
