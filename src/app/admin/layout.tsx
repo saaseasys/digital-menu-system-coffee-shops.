@@ -29,6 +29,9 @@ const menuItems = [
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
+console.log('✅ Admin Layout Loaded - Menu Items:', menuItems)
+console.log('✅ File Version: v2.1 - With Tables & Orders')
+
 export default function AdminLayout({
   children,
 }: {
@@ -43,6 +46,9 @@ export default function AdminLayout({
   const pathname = usePathname()
 
   useEffect(() => {
+    console.log('🔍 AdminLayout Mounted - Pathname:', pathname)
+    console.log('📋 Menu Items Count:', menuItems.length)
+    
     if (pathname === '/admin/login') {
       setIsLoginPage(true)
       setLoading(false)
@@ -83,6 +89,7 @@ export default function AdminLayout({
   }
 
   if (isLoginPage) {
+    console.log('🔑 Login Page Detected - Rendering without layout')
     return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
   }
 
@@ -111,6 +118,8 @@ export default function AdminLayout({
       </div>
     )
   }
+
+  console.log('🎯 Rendering Layout with', menuItems.length, 'menu items:', menuItems.map(i => i.label).join(', '))
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] flex">
