@@ -31,6 +31,8 @@ const menuItems = [
   { label: 'Orders', href: '/admin/orders', icon: ClipboardList },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
+
+console.log('BUILD VERSION:', new Date().toISOString()) 
 console.log('✅ Admin Layout Loaded v2.1 at:', new Date().toISOString())
 console.log('✅ Admin Layout Loaded - Menu Items:', menuItems)
 console.log('✅ File Version: v2.1 - With Tables & Orders')
@@ -315,5 +317,6 @@ export default function AdminLayout({
     </div>
   )
 }
+
 
 
