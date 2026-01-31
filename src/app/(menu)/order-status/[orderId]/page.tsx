@@ -42,7 +42,7 @@ export default function OrderStatusPage() {
     const { data } = await supabase
       .from('orders')
       .select('*, items:order_items(*), table:tables(*)')
-      .eq('id', orderId)
+      .eq('id', parseInt(orderId))
       .single();
     
     if (data) {
@@ -126,4 +126,5 @@ export default function OrderStatusPage() {
       </div>
     </div>
   );
+
 }
