@@ -14,16 +14,16 @@ export default function TablesManagementPage() {
     fetchTables();
   }, []);
 
-  const fetchTables = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('tables')
-      .select('*')
-      .order('table_number');
-    
-    setTables(data || []);
-    setLoading(false);
-  };
+const fetchTables = async () => {
+  setLoading(true);
+  const { data } = await supabase
+    .from('tables')
+    .select('*')
+    .order('table_number');
+  
+  setTables((data || []) as Table[]); // เพิ่ม as Table[]
+  setLoading(false);
+};
 
   const generateQR = (tableId: number) => {
     // สร้าง URL สำหรับสแกน (เปลี่ยน domain ตามจริง)
@@ -136,4 +136,5 @@ export default function TablesManagementPage() {
       </div>
     </div>
   );
+
 }
