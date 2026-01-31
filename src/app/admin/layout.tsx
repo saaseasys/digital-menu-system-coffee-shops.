@@ -15,13 +15,17 @@ import {
   X,
   AlertTriangle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Table,
+  ClipboardList
 } from 'lucide-react'
 
 const menuItems = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Categories', href: '/admin/categories', icon: Layers },
+  { label: 'Tables', href: '/admin/tables', icon: Table },
+  { label: 'Orders', href: '/admin/orders', icon: ClipboardList },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
@@ -38,7 +42,6 @@ export default function AdminLayout({
   const router = useRouter()
   const pathname = usePathname()
 
-  // ✅ Hooks ต้องถูกเรียกก่อนเสมอ ไม่มี early return ก่อน hooks
   useEffect(() => {
     if (pathname === '/admin/login') {
       setIsLoginPage(true)
@@ -73,14 +76,12 @@ export default function AdminLayout({
     checkAuth()
   }, [pathname, router])
 
-  // ฟังก์ชัน Logout กลาง (ใช้ซ้ำได้)
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/admin/login')
     router.refresh()
   }
 
-  // ✅ ย้าย conditional return มาหลัง hooks
   if (isLoginPage) {
     return <div className="min-h-screen bg-[#0F0F0F]">{children}</div>
   }
@@ -159,7 +160,6 @@ export default function AdminLayout({
             </div>
           )}
           
-          {/* ปุ่มกลับ */}
           <button
             onClick={() => router.back()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#252525] hover:text-[#D4A574] transition-colors"
@@ -168,7 +168,6 @@ export default function AdminLayout({
             <span>กลับ</span>
           </button>
 
-          {/* ปุ่มออกจากระบบ */}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-colors"
@@ -265,9 +264,7 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Top Header - Mobile (มีปุ่มกลับและออกจากระบบแล้ว) */}
         <header className="lg:hidden bg-[#1A1A1A] border-b border-[#2C1810] p-4 flex justify-between items-center sticky top-0 z-40">
-          {/* ซ้าย: ปุ่มกลับ + ปุ่มเมนู */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.back()}
@@ -286,12 +283,10 @@ export default function AdminLayout({
             </button>
           </div>
           
-          {/* กลาง: ชื่อ */}
           <Link href="/admin/dashboard" className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-[#D4A574]">Admin</h1>
           </Link>
 
-          {/* ขวา: ออกจากระบบ (สีแดง ชัดเจน) */}
           <button
             onClick={handleLogout}
             className="p-2 hover:bg-red-900/20 rounded-lg transition-colors text-red-400"
